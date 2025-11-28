@@ -1,0 +1,170 @@
+{
+  "name": "ContentCheck",
+  "type": "object",
+  "properties": {
+    "url": {
+      "type": "string",
+      "description": "The URL of the content being verified (optional if content_text is provided)"
+    },
+    "content_text": {
+      "type": "string",
+      "description": "Direct text content to verify (alternative to URL)"
+    },
+    "image_url": {
+      "type": "string",
+      "description": "URL of uploaded image for verification"
+    },
+    "verification_type": {
+      "type": "string",
+      "enum": [
+        "url",
+        "text",
+        "image"
+      ],
+      "default": "url",
+      "description": "Whether this is URL-based, text-based, or image-based verification"
+    },
+    "platform": {
+      "type": "string",
+      "enum": [
+        "youtube",
+        "twitter",
+        "instagram",
+        "tiktok",
+        "facebook",
+        "other"
+      ],
+      "description": "The platform where the content is hosted"
+    },
+    "content_type": {
+      "type": "string",
+      "enum": [
+        "video",
+        "post",
+        "image",
+        "article",
+        "text"
+      ],
+      "description": "Type of content"
+    },
+    "title": {
+      "type": "string",
+      "description": "Title or headline of the content"
+    },
+    "credibility_score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Overall credibility score (0-100)"
+    },
+    "verdict": {
+      "type": "string",
+      "enum": [
+        "verified",
+        "misleading",
+        "false",
+        "unverified"
+      ],
+      "description": "Final verdict on the content"
+    },
+    "ai_analysis": {
+      "type": "string",
+      "description": "Detailed AI analysis explanation"
+    },
+    "is_ai_generated": {
+      "type": "boolean",
+      "description": "Whether the image appears to be AI-generated"
+    },
+    "ai_generation_confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Confidence level that image is AI-generated (0-100)"
+    },
+    "image_manipulation_detected": {
+      "type": "boolean",
+      "description": "Whether image manipulation or editing was detected"
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "credibility": {
+            "type": "string",
+            "enum": [
+              "high",
+              "medium",
+              "low"
+            ]
+          }
+        }
+      },
+      "description": "Supporting sources used in verification"
+    },
+    "key_claims": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "claim": {
+            "type": "string"
+          },
+          "verdict": {
+            "type": "string",
+            "enum": [
+              "true",
+              "false",
+              "misleading",
+              "unverified"
+            ]
+          }
+        }
+      },
+      "description": "Individual claims found in the content"
+    },
+    "viral_score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "How viral/trending the content is"
+    },
+    "engagement_metrics": {
+      "type": "object",
+      "properties": {
+        "views": {
+          "type": "number"
+        },
+        "shares": {
+          "type": "number"
+        },
+        "comments": {
+          "type": "number"
+        }
+      },
+      "description": "Engagement metrics from the original platform"
+    },
+    "is_trending": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether this content is currently trending/viral"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "analyzing",
+        "completed",
+        "flagged"
+      ],
+      "default": "completed",
+      "description": "Status of the verification"
+    }
+  },
+  "required": []
+}

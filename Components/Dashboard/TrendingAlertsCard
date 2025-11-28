@@ -1,0 +1,72 @@
+import React from "react";
+import { motion } from "framer-motion";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { AlertTriangle, Youtube, Twitter, Instagram } from "lucide-react";
+
+export default function TrendingAlertsCard() {
+  const alerts = [
+    {
+      claim: "Fake vaccine side effects video going viral",
+      platform: "youtube",
+      timesChecked: 234,
+      score: 15,
+      icon: Youtube
+    },
+    {
+      claim: "Edited political speech spreading rapidly",
+      platform: "twitter",
+      timesChecked: 189,
+      score: 22,
+      icon: Twitter
+    },
+    {
+      claim: "AI-generated celebrity endorsement",
+      platform: "instagram",
+      timesChecked: 156,
+      score: 8,
+      icon: Instagram
+    }
+  ];
+
+  return (
+    <Card className="border-2 border-red-200 bg-red-50/50 shadow-lg">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-lg text-red-900">
+          <AlertTriangle className="w-5 h-5" />
+          ⚠️ Trending Misinformation Alert
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {alerts.map((alert, index) => (
+          <motion.div
+            key={index}
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: index * 0.1, duration: 0.3 }}
+            className="bg-white rounded-xl p-4 border border-red-200"
+          >
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                <alert.icon className="w-5 h-5 text-red-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-sm text-slate-900 mb-2">
+                  {alert.claim}
+                </p>
+                <div className="flex items-center gap-3 text-xs">
+                  <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
+                    Score: {alert.score}/100
+                  </Badge>
+                  <span className="text-slate-600">
+                    Checked {alert.timesChecked}× today
+                  </span>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        ))}
+      </CardContent>
+    </Card>
+  );
+}

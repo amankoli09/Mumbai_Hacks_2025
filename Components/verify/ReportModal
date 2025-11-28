@@ -1,0 +1,120 @@
+import React, { useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Flag } from "lucide-react";
+
+export default function ReportModal({ isOpen, onClose, contentCheck, onSubmit }) {
+  const [reportType, setReportType] = useState("");
+  const [description, setDescription] = useState("");
+  const [supportingLink, setSupportingLink] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    const supportingLinks = supportingLink.trim() ? [supportingLink.trim()] : [];
+
+    await onSubmit({
+      content_check_id: contentCheck?.id,
+      report_type: reportType,
+      description,
+      supporting_links: supportingLinks,
+    });
+
+    setIsSubmitting(false);
+    setReportType("");
+    setDescription("");
+    setSupportingLink("");
+    onClose();
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-xl">
+            <Flag className="w-5 h-5 text-blue-600" />
+            Report an Issue
+          </DialogTitle>
+          <DialogDescription>
+            Help us improve accuracy by reporting any issues with this verification.
+          </DialogDescription>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-2">
+            <Label htmlFor="report-type">Report Type</Label>
+            <Select value={reportType} onValueChange={setReportType} required>
+              <SelectTrigger id="report-type">
+                <SelectValue placeholder="Select report type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="false_positive">False Positive - Content is actually true</SelectItem>
+                <SelectItem value="false_negative">False Negative - Content is actually false</SelectItem>
+                <SelectItem value="additional_context">Additional Context Needed</SelectItem>
+                <SelectItem value="other">Other</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="description">Description</Label>
+            <Textarea
+              id="description"
+              placeholder="Please describe the issue in detail..."
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="min-h-32"
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="supporting-link">Supporting Link (Optional)</Label>
+            <Input
+              id="supporting-link"
+              type="url"
+              placeholder="https://..."
+              value={supportingLink}
+              onChange={(e) => setSupportingLink(e.target.value)}
+            />
+            <p className="text-xs text-slate-500">
+              Provide a link to support your report
+            </p>
+          </div>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={isSubmitting || !reportType || !description}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {isSubmitting ? "Submitting..." : "Submit Report"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}

@@ -1,0 +1,54 @@
+import React from "react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { BarChart3 } from "lucide-react";
+
+export default function TopicsChart() {
+  const data = [
+    { topic: "Politics", count: 145 },
+    { topic: "Health", count: 98 },
+    { topic: "Entertainment", count: 76 },
+    { topic: "Technology", count: 54 },
+    { topic: "Sports", count: 41 }
+  ];
+
+  return (
+    <Card className="border-none shadow-lg">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-lg">
+          <BarChart3 className="w-5 h-5 text-emerald-600" />
+          Top Topics Verified
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <ResponsiveContainer width="100%" height={250}>
+          <BarChart data={data}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+            <XAxis 
+              dataKey="topic" 
+              stroke="#64748b"
+              style={{ fontSize: '12px' }}
+            />
+            <YAxis 
+              stroke="#64748b"
+              style={{ fontSize: '12px' }}
+            />
+            <Tooltip 
+              contentStyle={{
+                backgroundColor: '#fff',
+                border: '1px solid #e5e7eb',
+                borderRadius: '8px',
+                boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+              }}
+            />
+            <Bar 
+              dataKey="count" 
+              fill="#10b981"
+              radius={[8, 8, 0, 0]}
+            />
+          </BarChart>
+        </ResponsiveContainer>
+      </CardContent>
+    </Card>
+  );
+}

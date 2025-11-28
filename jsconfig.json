@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["*"],
+      "@/entities/*": ["EntitiesRuntime/*"],
+      "@/components/*": ["components/*"],
+      "@/Components/*": ["Components/*"],
+      "@/Pages/*": ["Pages/*"],
+      "@/integrations/*": ["integrations/*"]
+    },
+    "jsx": "react-jsx"
+  },
+  "include": [
+    "**/*.js",
+    "**/*.jsx"
+  ]
+}

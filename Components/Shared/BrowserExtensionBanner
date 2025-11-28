@@ -1,0 +1,102 @@
+import React, { useState } from "react";
+import { motion } from "framer-motion";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Chrome, Sparkles, ExternalLink } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+
+export default function BrowserExtensionBanner() {
+  const [showDialog, setShowDialog] = useState(false);
+
+  const handleAddToChrome = () => {
+    // For now, show a coming soon dialog
+    // Later, you can replace this with actual Chrome Web Store URL
+    setShowDialog(true);
+    
+    // If you have a Chrome Web Store URL, uncomment this:
+    // window.open('YOUR_CHROME_STORE_URL', '_blank');
+  };
+
+  return (
+    <>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3, duration: 0.5 }}
+      >
+        <Card className="border-none shadow-xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 overflow-hidden">
+          <CardContent className="p-6 relative">
+            <div className="absolute inset-0 bg-black/10" />
+            <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
+                  <Chrome className="w-8 h-8 text-white" />
+                </div>
+                <div className="text-white">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Sparkles className="w-5 h-5 text-yellow-300" />
+                    <span className="font-bold text-lg">NEW: TruthShield Chrome Extension</span>
+                  </div>
+                  <p className="text-sm text-white/90">
+                    Verify content instantly while browsing social media
+                  </p>
+                </div>
+              </div>
+              <Button 
+                size="lg"
+                onClick={handleAddToChrome}
+                className="bg-white text-indigo-600 hover:bg-white/90 font-bold shadow-lg flex items-center gap-2"
+              >
+                Add to Chrome
+                <ExternalLink className="w-4 h-4" />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      {/* Coming Soon Dialog */}
+      <Dialog open={showDialog} onOpenChange={setShowDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Chrome className="w-6 h-6 text-indigo-600" />
+              Chrome Extension Coming Soon!
+            </DialogTitle>
+            <DialogDescription className="space-y-4 pt-4">
+              <p>
+                We're working hard to bring you the TruthShield Chrome Extension. 
+                It will allow you to verify content instantly while browsing:
+              </p>
+              <ul className="list-disc list-inside space-y-2 text-sm">
+                <li>Right-click any post to verify instantly</li>
+                <li>Automatic alerts for suspicious content</li>
+                <li>Seamless integration with social media platforms</li>
+                <li>One-click fact-checking</li>
+              </ul>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
+                <p className="text-sm font-medium text-blue-900">
+                  Want early access? Email us at{" "}
+                  <a href="mailto:extension@truthshield.com" className="text-blue-600 hover:underline">
+                    extension@truthshield.com
+                  </a>
+                </p>
+              </div>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end mt-4">
+            <Button onClick={() => setShowDialog(false)}>
+              Got it!
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}

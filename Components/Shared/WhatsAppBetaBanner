@@ -1,0 +1,60 @@
+import React, { useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { MessageCircle, Send } from "lucide-react";
+
+export default function WhatsAppBetaBanner() {
+  const [email, setEmail] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setSubmitted(true);
+    setTimeout(() => {
+      setEmail("");
+      setSubmitted(false);
+    }, 3000);
+  };
+
+  return (
+    <Card className="border-2 border-green-200 bg-green-50 shadow-lg">
+      <CardContent className="p-6">
+        <div className="flex items-start gap-4">
+          <div className="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center flex-shrink-0">
+            <MessageCircle className="w-6 h-6 text-white" />
+          </div>
+          <div className="flex-1">
+            <h3 className="font-bold text-lg text-slate-900 mb-1">
+              📱 Coming Soon: WhatsApp Verification
+            </h3>
+            <p className="text-sm text-slate-600 mb-4">
+              Send any suspicious message to our WhatsApp bot for instant verification. 
+              Join the beta waitlist now!
+            </p>
+            {submitted ? (
+              <div className="text-sm font-medium text-green-700">
+                ✓ Thanks! We'll notify you when beta launches
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit} className="flex gap-2">
+                <Input
+                  type="email"
+                  placeholder="Enter your email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="flex-1"
+                />
+                <Button type="submit" className="bg-green-600 hover:bg-green-700">
+                  <Send className="w-4 h-4 mr-2" />
+                  Join Waitlist
+                </Button>
+              </form>
+            )}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}

@@ -1,0 +1,46 @@
+{
+  "name": "UserProgress",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "Email of the user"
+    },
+    "total_points": {
+      "type": "number",
+      "default": 0,
+      "description": "Total points earned"
+    },
+    "level": {
+      "type": "number",
+      "default": 1,
+      "description": "Current level"
+    },
+    "facts_verified": {
+      "type": "number",
+      "default": 0,
+      "description": "Total facts verified"
+    },
+    "streak_days": {
+      "type": "number",
+      "default": 0,
+      "description": "Consecutive days of verification"
+    },
+    "badges": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [],
+      "description": "Earned achievement badges"
+    },
+    "last_verification_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Last verification date for streak tracking"
+    }
+  },
+  "required": [
+    "user_email"
+  ]
+}

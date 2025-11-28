@@ -1,0 +1,59 @@
+import React from "react";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { TrendingUp } from "lucide-react";
+
+export default function VerificationTrendsChart() {
+  const data = [
+    { day: "Mon", verifications: 45 },
+    { day: "Tue", verifications: 78 },
+    { day: "Wed", verifications: 62 },
+    { day: "Thu", verifications: 95 },
+    { day: "Fri", verifications: 120 },
+    { day: "Sat", verifications: 88 },
+    { day: "Sun", verifications: 105 }
+  ];
+
+  return (
+    <Card className="border-none shadow-lg">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-lg">
+          <TrendingUp className="w-5 h-5 text-blue-600" />
+          Verification Trends (Last 7 Days)
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <ResponsiveContainer width="100%" height={250}>
+          <LineChart data={data}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+            <XAxis 
+              dataKey="day" 
+              stroke="#64748b"
+              style={{ fontSize: '12px' }}
+            />
+            <YAxis 
+              stroke="#64748b"
+              style={{ fontSize: '12px' }}
+            />
+            <Tooltip 
+              contentStyle={{
+                backgroundColor: '#fff',
+                border: '1px solid #e5e7eb',
+                borderRadius: '8px',
+                boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+              }}
+            />
+            <Line 
+              type="monotone" 
+              dataKey="verifications" 
+              stroke="#3b82f6" 
+              strokeWidth={3}
+              dot={{ fill: '#3b82f6', r: 4 }}
+              activeDot={{ r: 6 }}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </CardContent>
+    </Card>
+  );
+}

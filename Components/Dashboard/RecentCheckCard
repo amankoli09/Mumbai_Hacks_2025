@@ -1,0 +1,134 @@
+import React from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button"; // Added Button import
+import { CheckCircle2, AlertTriangle, XCircle, ExternalLink } from "lucide-react";
+// Removed: import { format } from "date-fns";
+import { motion } from "framer-motion";
+
+export default function RecentCheckCard({ check, index }) {
+  const getVerdictConfig = (verdict) => {
+    switch (verdict) {
+      case "verified":
+        return {
+          icon: CheckCircle2,
+          label: "Verified",
+          color: "text-emerald-600",
+          bgColor: "bg-emerald-50",
+          borderColor: "border-emerald-200",
+        };
+      case "misleading":
+        return {
+          icon: AlertTriangle,
+          label: "Misleading",
+          color: "text-amber-600",
+          bgColor: "bg-amber-50",
+          borderColor: "border-amber-200",
+        };
+      case "false":
+        return {
+          icon: XCircle,
+          label: "False",
+          color: "text-red-600",
+          bgColor: "bg-red-50",
+          borderColor: "border-red-200",
+        };
+      default:
+        return {
+          icon: AlertTriangle,
+          label: "Unverified",
+          color: "text-slate-600",
+          bgColor: "bg-slate-50",
+          borderColor: "border-slate-200",
+        };
+    }
+  };
+
+  const config = getVerdictConfig(check.verdict);
+  const VerdictIcon = config.icon;
+
+  const getRelativeTime = (date) => {
+    const now = new Date();
+    const checkDate = new Date(date);
+    const diffMs = now - checkDate;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return "just now"; // Added "just now" for very recent checks
+    if (diffMins < 60) return `${diffMins} minutes ago`;
+    if (diffHours < 24) return `${diffHours} hours ago`;
+    if (diffDays === 1) return `1 day ago`; // Specific for 1 day
+    return `${diffDays} days ago`;
+  };
+
+  const getCategoryTag = (check) => {
+    // Simple category detection based on title/content
+    const content = (check.title + " " + (check.ai_analysis || "")).toLowerCase();
+    if (content.includes("politic") || content.includes("government") || content.includes("election")) return "Politics";
+    if (content.includes("health") || content.includes("medical") || content.includes("vaccine") || content.includes("disease")) return "Health";
+    if (content.includes("celebrity") || content.includes("movie") || content.includes("music") || content.includes("entertainment")) return "Entertainment";
+    if (content.includes("tech") || content.includes("ai") || content.includes("software") || content.includes("digital")) return "Technology";
+    if (content.includes("economy") || content.includes("finance") || content.includes("market")) return "Economy";
+    if (content.includes("science") || content.includes("research") || content.includes("space")) return "Science";
+    return "General";
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: -20 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: index * 0.1, duration: 0.3 }}
+    >
+      <Card className={`border ${config.borderColor} hover:shadow-xl transition-all duration-200 group`}>
+        <CardContent className="p-6">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-start gap-4 flex-1">
+              <div className={`w-10 h-10 bg-gradient-to-br ${config.bgColor} rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform`}>
+                <VerdictIcon className={`w-5 h-5 ${config.color}`} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-2">
+                  <Badge variant="outline" className="text-xs bg-slate-100">
+                    {getCategoryTag(check)}
+                  </Badge>
+                  <span className="text-xs text-slate-500">
+                    {getRelativeTime(check.created_date)}
+                  </span>
+                </div>
+                <h3 className="font-semibold text-slate-900 mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">
+                  {check.title || "Content Check"}
+                </h3>
+                <div className="flex items-center gap-2 mb-3 flex-wrap">
+                  <Badge className={`${config.bgColor} ${config.color} border ${config.borderColor}`}>
+                    {config.label}
+                  </Badge>
+                  <Badge variant="outline" className="text-xs">
+                    {check.platform}
+                  </Badge>
+                </div>
+                <p className="text-sm text-slate-600 mb-3 line-clamp-2">
+                  {check.ai_analysis}
+                </p>
+                {/* Replaced 'a' tag with Button */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 -ml-2"
+                  onClick={() => window.open(check.url, "_blank")} // Opens the URL in a new tab
+                >
+                  Re-verify
+                  <ExternalLink className="w-3 h-3 ml-1" />
+                </Button>
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-2xl font-bold text-slate-900">{check.credibility_score}</div>
+              <div className="text-xs text-slate-500">Score</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+}

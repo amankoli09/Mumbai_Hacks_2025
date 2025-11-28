@@ -1,0 +1,18 @@
+export const User = {
+  async me() {
+    return {
+      id: 'local-user-id',
+      email: 'user@example.com',
+      full_name: 'Local User',
+      created_date: new Date().toISOString(),
+      role: 'User',
+      profile_image: '',
+      phone: '',
+      bio: '',
+      location: '',
+    }
+  },
+  async updateMyUserData(data) {
+    return { success: true, ...data }
+  }
+}

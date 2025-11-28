@@ -1,0 +1,421 @@
+import React, { useState, useEffect } from "react";
+import { User } from "@/entities/User";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { UploadFile } from "@/integrations/Core";
+import {
+  User as UserIcon,
+  Mail,
+  Phone,
+  MapPin,
+  Calendar,
+  Upload,
+  Save,
+  Edit,
+  CheckCircle2,
+  Shield,
+  Trophy,
+  AlertCircle
+} from "lucide-react";
+import { motion } from "framer-motion";
+import { UserProgress } from "@/entities/UserProgress";
+
+export default function UserProfilePage() {
+  const [user, setUser] = useState(null);
+  const [userProgress, setUserProgress] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [success, setSuccess] = useState("");
+  const [error, setError] = useState("");
+
+  const [formData, setFormData] = useState({
+    full_name: "",
+    phone: "",
+    bio: "",
+    location: "",
+    profile_image: ""
+  });
+
+  useEffect(() => {
+    loadUserData();
+  }, []);
+
+  const loadUserData = async () => {
+    setIsLoading(true);
+    try {
+      const currentUser = await User.me();
+      setUser(currentUser);
+      
+      setFormData({
+        full_name: currentUser.full_name || "",
+        phone: currentUser.phone || "",
+        bio: currentUser.bio || "",
+        location: currentUser.location || "",
+        profile_image: currentUser.profile_image || ""
+      });
+
+      // Load user progress
+      const progressList = await UserProgress.filter({ user_email: currentUser.email });
+      if (progressList.length > 0) {
+        setUserProgress(progressList[0]);
+      }
+    } catch (err) {
+      setError("Failed to load user data");
+      console.error(err);
+    }
+    setIsLoading(false);
+  };
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setIsUploadingImage(true);
+    setError("");
+
+    try {
+      const { file_url } = await UploadFile({ file });
+      setFormData({ ...formData, profile_image: file_url });
+      setSuccess("Profile image uploaded successfully!");
+      setTimeout(() => setSuccess(""), 3000);
+    } catch (err) {
+      setError("Failed to upload image");
+      console.error(err);
+    }
+
+    setIsUploadingImage(false);
+  };
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    setError("");
+    setSuccess("");
+
+    try {
+      await User.updateMyUserData(formData);
+      setSuccess("Profile updated successfully!");
+      setIsEditing(false);
+      await loadUserData();
+      setTimeout(() => setSuccess(""), 3000);
+    } catch (err) {
+      setError("Failed to update profile");
+      console.error(err);
+    }
+
+    setIsSaving(false);
+  };
+
+  const getInitials = (name) => {
+    if (!name) return "U";
+    return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100 p-6 md:p-12">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center py-20">
+            <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-slate-600">Loading profile...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100 p-6 md:p-12">
+      <div className="max-w-4xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-4xl font-bold text-slate-900 mb-2">My Profile</h1>
+            <p className="text-lg text-slate-600">Manage your personal information and settings</p>
+          </div>
+          {!isEditing && (
+            <Button
+              onClick={() => setIsEditing(true)}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              <Edit className="w-4 h-4 mr-2" />
+              Edit Profile
+            </Button>
+          )}
+        </div>
+
+        {/* Success/Error Messages */}
+        {success && (
+          <Alert className="bg-emerald-50 border-emerald-200">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+            <AlertDescription className="text-emerald-800">{success}</AlertDescription>
+          </Alert>
+        )}
+
+        {error && (
+          <Alert className="bg-red-50 border-red-200">
+            <AlertCircle className="w-4 h-4 text-red-600" />
+            <AlertDescription className="text-red-800">{error}</AlertDescription>
+          </Alert>
+        )}
+
+        {/* Profile Card */}
+        <Card className="border-none shadow-xl">
+          <CardContent className="p-8">
+            <div className="flex flex-col md:flex-row gap-8">
+              {/* Profile Image */}
+              <div className="flex flex-col items-center gap-4">
+                <Avatar className="w-32 h-32 border-4 border-blue-200">
+                  <AvatarImage src={formData.profile_image} alt={formData.full_name} />
+                  <AvatarFallback className="bg-gradient-to-br from-blue-500 to-blue-600 text-white text-3xl font-bold">
+                    {getInitials(formData.full_name)}
+                  </AvatarFallback>
+                </Avatar>
+
+                {isEditing && (
+                  <div>
+                    <input
+                      type="file"
+                      id="profile-image"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                      disabled={isUploadingImage}
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => document.getElementById('profile-image').click()}
+                      disabled={isUploadingImage}
+                      className="w-full"
+                    >
+                      {isUploadingImage ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mr-2"></div>
+                          Uploading...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="w-4 h-4 mr-2" />
+                          Change Photo
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                )}
+
+                {/* User Stats */}
+                {userProgress && (
+                  <div className="mt-4 space-y-2 w-full">
+                    <div className="flex items-center gap-2 p-3 bg-amber-50 rounded-xl">
+                      <Trophy className="w-5 h-5 text-amber-600" />
+                      <div>
+                        <div className="text-xs text-slate-600">Total Points</div>
+                        <div className="text-lg font-bold text-slate-900">
+                          {userProgress.total_points}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-xl">
+                      <Shield className="w-5 h-5 text-blue-600" />
+                      <div>
+                        <div className="text-xs text-slate-600">Level</div>
+                        <div className="text-lg font-bold text-slate-900">
+                          {userProgress.level}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 p-3 bg-emerald-50 rounded-xl">
+                      <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                      <div>
+                        <div className="text-xs text-slate-600">Facts Verified</div>
+                        <div className="text-lg font-bold text-slate-900">
+                          {userProgress.facts_verified}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Profile Information */}
+              <div className="flex-1 space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Full Name */}
+                  <div>
+                    <Label htmlFor="full_name" className="flex items-center gap-2 mb-2">
+                      <UserIcon className="w-4 h-4" />
+                      Full Name
+                    </Label>
+                    {isEditing ? (
+                      <Input
+                        id="full_name"
+                        value={formData.full_name}
+                        onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                        placeholder="Enter your full name"
+                      />
+                    ) : (
+                      <p className="text-slate-900 font-medium">{formData.full_name || "Not set"}</p>
+                    )}
+                  </div>
+
+                  {/* Email (Read-only) */}
+                  <div>
+                    <Label className="flex items-center gap-2 mb-2">
+                      <Mail className="w-4 h-4" />
+                      Email Address
+                    </Label>
+                    <p className="text-slate-900 font-medium">{user?.email}</p>
+                    <p className="text-xs text-slate-500 mt-1">Email cannot be changed</p>
+                  </div>
+
+                  {/* Phone */}
+                  <div>
+                    <Label htmlFor="phone" className="flex items-center gap-2 mb-2">
+                      <Phone className="w-4 h-4" />
+                      Phone Number
+                    </Label>
+                    {isEditing ? (
+                      <Input
+                        id="phone"
+                        type="tel"
+                        value={formData.phone}
+                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                        placeholder="+1 (555) 123-4567"
+                      />
+                    ) : (
+                      <p className="text-slate-900 font-medium">{formData.phone || "Not set"}</p>
+                    )}
+                  </div>
+
+                  {/* Location */}
+                  <div>
+                    <Label htmlFor="location" className="flex items-center gap-2 mb-2">
+                      <MapPin className="w-4 h-4" />
+                      Location
+                    </Label>
+                    {isEditing ? (
+                      <Input
+                        id="location"
+                        value={formData.location}
+                        onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                        placeholder="City, Country"
+                      />
+                    ) : (
+                      <p className="text-slate-900 font-medium">{formData.location || "Not set"}</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Bio */}
+                <div>
+                  <Label htmlFor="bio" className="flex items-center gap-2 mb-2">
+                    About Me
+                  </Label>
+                  {isEditing ? (
+                    <Textarea
+                      id="bio"
+                      value={formData.bio}
+                      onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+                      placeholder="Tell us about yourself..."
+                      className="min-h-24"
+                    />
+                  ) : (
+                    <p className="text-slate-700">{formData.bio || "No bio added yet"}</p>
+                  )}
+                </div>
+
+                {/* Member Since */}
+                <div className="flex items-center gap-2 text-sm text-slate-600">
+                  <Calendar className="w-4 h-4" />
+                  <span>Member since {new Date(user?.created_date).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</span>
+                </div>
+
+                {/* Action Buttons */}
+                {isEditing && (
+                  <div className="flex gap-3 pt-4 border-t">
+                    <Button
+                      onClick={handleSave}
+                      disabled={isSaving}
+                      className="bg-blue-600 hover:bg-blue-700"
+                    >
+                      {isSaving ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-4 h-4 mr-2" />
+                          Save Changes
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setIsEditing(false);
+                        loadUserData();
+                      }}
+                      disabled={isSaving}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Account Settings Card */}
+        <Card className="border-none shadow-xl">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Shield className="w-5 h-5 text-blue-600" />
+              Account Settings
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
+              <div>
+                <div className="font-semibold text-slate-900">Role</div>
+                <div className="text-sm text-slate-600">Your account role</div>
+              </div>
+              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                {user?.role || "User"}
+              </Badge>
+            </div>
+
+            <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
+              <div>
+                <div className="font-semibold text-slate-900">Account ID</div>
+                <div className="text-sm text-slate-600 font-mono">{user?.id}</div>
+              </div>
+            </div>
+
+            <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <div className="font-semibold text-amber-900 mb-1">Account Security</div>
+                  <p className="text-sm text-amber-800">
+                    Your account is secured through Google authentication. 
+                    To change your email or password, please update it through your Google account settings.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}

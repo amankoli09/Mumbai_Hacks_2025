@@ -1,0 +1,157 @@
+import React, { useState, useEffect } from "react";
+import { ContentCheck } from "@/entities/ContentCheck";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { TrendingUp, AlertTriangle } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+import TrendingAlertCard from "../components/trending/TrendingAlertCard";
+import CredibilityResult from "../components/verify/CredibilityResult";
+import ReportModal from "../components/verify/ReportModal";
+import { UserReport } from "@/entities/UserReport";
+
+export default function TrendingAlertsPage() {
+  const [checks, setChecks] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedCheck, setSelectedCheck] = useState(null);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [activeTab, setActiveTab] = useState("all");
+
+  useEffect(() => {
+    loadTrendingContent();
+  }, []);
+
+  const loadTrendingContent = async () => {
+    setIsLoading(true);
+    const data = await ContentCheck.filter({ is_trending: true }, "-viral_score", 50);
+    setChecks(data);
+    setIsLoading(false);
+  };
+
+  const handleReport = async (reportData) => {
+    try {
+      await UserReport.create(reportData);
+    } catch (err) {
+      console.error("Error submitting report:", err);
+    }
+  };
+
+  const filterByRisk = (checks) => {
+    switch (activeTab) {
+      case "high":
+        return checks.filter(c => c.verdict === "false" || c.credibility_score < 30);
+      case "medium":
+        return checks.filter(c => c.verdict === "misleading" || (c.credibility_score >= 30 && c.credibility_score < 60));
+      case "low":
+        return checks.filter(c => c.credibility_score >= 60);
+      default:
+        return checks;
+    }
+  };
+
+  const filteredChecks = filterByRisk(checks);
+
+  if (selectedCheck) {
+    return (
+      <div className="min-h-screen p-6 md:p-12">
+        <div className="max-w-5xl mx-auto">
+          <button
+            onClick={() => setSelectedCheck(null)}
+            className="mb-6 text-blue-600 hover:text-blue-700 font-semibold flex items-center gap-2"
+          >
+            ← Back to Alerts
+          </button>
+          <CredibilityResult
+            result={selectedCheck}
+            onReport={() => setShowReportModal(true)}
+          />
+          <ReportModal
+            isOpen={showReportModal}
+            onClose={() => setShowReportModal(false)}
+            contentCheck={selectedCheck}
+            onSubmit={handleReport}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen p-6 md:p-12">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="mb-10">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-amber-600 rounded-2xl flex items-center justify-center shadow-lg">
+              <TrendingUp className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-4xl font-bold text-slate-900 tracking-tight">Trending Alerts</h1>
+              <p className="text-lg text-slate-600">
+                Monitor viral content that requires immediate attention
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Alert Banner */}
+        {checks.length > 0 && (
+          <Alert className="mb-8 bg-amber-50 border-amber-200">
+            <AlertTriangle className="h-5 w-5 text-amber-600" />
+            <AlertDescription className="text-amber-900 font-medium">
+              {checks.length} trending content items detected. Monitor and verify suspicious content before it spreads.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Filter Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
+          <TabsList className="bg-white shadow-md border border-slate-200">
+            <TabsTrigger value="all" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">
+              All Alerts ({checks.length})
+            </TabsTrigger>
+            <TabsTrigger value="high" className="data-[state=active]:bg-red-600 data-[state=active]:text-white">
+              High Risk
+            </TabsTrigger>
+            <TabsTrigger value="medium" className="data-[state=active]:bg-amber-600 data-[state=active]:text-white">
+              Medium Risk
+            </TabsTrigger>
+            <TabsTrigger value="low" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">
+              Low Risk
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+
+        {/* Content List */}
+        {isLoading ? (
+          <div className="space-y-6">
+            {Array(5).fill(0).map((_, i) => (
+              <Skeleton key={i} className="h-48 w-full rounded-2xl" />
+            ))}
+          </div>
+        ) : filteredChecks.length === 0 ? (
+          <div className="text-center py-20">
+            <TrendingUp className="w-20 h-20 text-slate-300 mx-auto mb-6" />
+            <h3 className="text-2xl font-bold text-slate-900 mb-3">No Trending Alerts</h3>
+            <p className="text-lg text-slate-600">
+              {activeTab === "all" 
+                ? "Great news! No suspicious trending content detected right now."
+                : `No ${activeTab} risk content detected.`}
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {filteredChecks.map((check, index) => (
+              <TrendingAlertCard
+                key={check.id}
+                check={check}
+                index={index}
+                onViewDetails={setSelectedCheck}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

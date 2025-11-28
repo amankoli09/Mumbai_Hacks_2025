@@ -1,0 +1,311 @@
+import React, { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Shield, Search, Youtube, Twitter, Instagram, Video, FileText, Image as ImageIcon, Upload } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+
+export default function VerificationForm({ onSubmit, isLoading }) {
+  const [verificationType, setVerificationType] = useState("url");
+  const [url, setUrl] = useState("");
+  const [text, setText] = useState("");
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+
+  const detectPlatform = (url) => {
+    if (url.includes("youtube.com") || url.includes("youtu.be")) return "youtube";
+    if (url.includes("twitter.com") || url.includes("x.com")) return "twitter";
+    if (url.includes("instagram.com")) return "instagram";
+    if (url.includes("tiktok.com")) return "tiktok";
+    if (url.includes("facebook.com")) return "facebook";
+    return "other";
+  };
+
+  const handleImageSelect = (e) => {
+    const file = e.target.files[0];
+    if (file && file.type.startsWith('image/')) {
+      setSelectedImage(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    
+    if (verificationType === "url") {
+      if (!url.trim()) return;
+      const platform = detectPlatform(url);
+      onSubmit({ 
+        verificationType: "url",
+        url: url.trim(), 
+        platform 
+      });
+    } else if (verificationType === "text") {
+      if (!text.trim()) return;
+      onSubmit({ 
+        verificationType: "text",
+        content_text: text.trim(),
+        platform: "other"
+      });
+    } else if (verificationType === "image") {
+      if (!selectedImage) return;
+      onSubmit({ 
+        verificationType: "image",
+        imageFile: selectedImage,
+        platform: "other"
+      });
+    }
+  };
+
+  const platformExamples = [
+    { icon: Youtube, name: "YouTube", color: "text-red-500", bg: "bg-red-50" },
+    { icon: Twitter, name: "Twitter/X", color: "text-blue-500", bg: "bg-blue-50" },
+    { icon: Instagram, name: "Instagram", color: "text-pink-500", bg: "bg-pink-50" },
+    { icon: Video, name: "TikTok", color: "text-slate-900", bg: "bg-slate-50" },
+  ];
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+    >
+      <Card className="border-none shadow-2xl shadow-blue-500/10 bg-white/90 backdrop-blur-sm">
+        <CardContent className="p-8 md:p-12">
+          <div className="text-center mb-8">
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ type: "spring", stiffness: 200, delay: 0.2 }}
+              className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl shadow-lg shadow-blue-500/30 mb-6"
+            >
+              <Shield className="w-10 h-10 text-white" />
+            </motion.div>
+            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-3 tracking-tight">
+              Verify Any Content
+            </h2>
+            <p className="text-lg text-slate-600 max-w-2xl mx-auto">
+              Paste a link, text, or upload an image to instantly check if content is true, misleading, or AI-generated. 
+              Our AI analyzes credibility in seconds.
+            </p>
+          </div>
+
+          <Tabs value={verificationType} onValueChange={setVerificationType} className="mb-6">
+            <TabsList className="grid w-full grid-cols-3 bg-slate-100 p-1 rounded-xl">
+              <TabsTrigger 
+                value="url" 
+                className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-md flex items-center gap-2"
+              >
+                <Search className="w-4 h-4" />
+                URL
+              </TabsTrigger>
+              <TabsTrigger 
+                value="text"
+                className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-md flex items-center gap-2"
+              >
+                <FileText className="w-4 h-4" />
+                Text
+              </TabsTrigger>
+              <TabsTrigger 
+                value="image"
+                className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-md flex items-center gap-2"
+              >
+                <ImageIcon className="w-4 h-4" />
+                Image
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <AnimatePresence mode="wait">
+              {verificationType === "url" ? (
+                <motion.div
+                  key="url"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  transition={{ duration: 0.2 }}
+                  className="relative"
+                >
+                  <Input
+                    type="url"
+                    placeholder="Paste YouTube link, tweet, reel, or any social media URL..."
+                    value={url}
+                    onChange={(e) => setUrl(e.target.value)}
+                    className="h-16 text-lg pl-14 pr-4 rounded-2xl border-2 border-slate-200 focus:border-blue-500 transition-all duration-200 shadow-sm"
+                    disabled={isLoading}
+                  />
+                  <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-6 h-6 text-slate-400" />
+                </motion.div>
+              ) : verificationType === "text" ? (
+                <motion.div
+                  key="text"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.2 }}
+                  className="relative"
+                >
+                  <Textarea
+                    placeholder="Paste any text, claim, or statement you want to verify... 
+
+Example: 'Scientists have discovered a cure for all cancers that will be available next year.'"
+                    value={text}
+                    onChange={(e) => setText(e.target.value)}
+                    className="min-h-40 text-lg p-5 rounded-2xl border-2 border-slate-200 focus:border-blue-500 transition-all duration-200 shadow-sm resize-none"
+                    disabled={isLoading}
+                  />
+                  <FileText className="absolute right-5 top-5 w-6 h-6 text-slate-400" />
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="image"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <div className="space-y-4">
+                    <div
+                      className="relative border-2 border-dashed border-slate-300 rounded-2xl p-8 text-center hover:border-blue-400 transition-all duration-200 cursor-pointer bg-slate-50/50"
+                      onClick={() => document.getElementById('image-upload').click()}
+                    >
+                      <input
+                        id="image-upload"
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageSelect}
+                        className="hidden"
+                        disabled={isLoading}
+                      />
+                      
+                      {imagePreview ? (
+                        <div className="space-y-4">
+                          <img
+                            src={imagePreview}
+                            alt="Preview"
+                            className="max-h-64 mx-auto rounded-xl shadow-lg"
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedImage(null);
+                              setImagePreview(null);
+                            }}
+                            className="rounded-xl"
+                          >
+                            Remove Image
+                          </Button>
+                        </div>
+                      ) : (
+                        <>
+                          <Upload className="w-12 h-12 text-slate-400 mx-auto mb-4" />
+                          <h3 className="text-lg font-semibold text-slate-900 mb-2">
+                            Upload an Image
+                          </h3>
+                          <p className="text-sm text-slate-600 mb-4">
+                            Click to browse or drag and drop your image here
+                          </p>
+                          <p className="text-xs text-slate-500">
+                            Supports: JPG, PNG, WEBP (Max 10MB)
+                          </p>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <Button
+              type="submit"
+              disabled={isLoading || (
+                verificationType === "url" ? !url.trim() : 
+                verificationType === "text" ? !text.trim() : 
+                !selectedImage
+              )}
+              className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg shadow-blue-500/30 rounded-xl transition-all duration-200"
+            >
+              {isLoading ? (
+                <div className="flex items-center gap-3">
+                  <div className="w-5 h-5 border-3 border-white border-t-transparent rounded-full animate-spin" />
+                  <span>Analyzing Content...</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-3">
+                  <Shield className="w-5 h-5" />
+                  <span>Verify Now</span>
+                </div>
+              )}
+            </Button>
+          </form>
+
+          {verificationType === "url" && (
+            <div className="mt-10 pt-8 border-t border-slate-200">
+              <p className="text-sm text-slate-500 text-center mb-6 font-medium">
+                Supported Platforms
+              </p>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {platformExamples.map((platform, index) => (
+                  <motion.div
+                    key={platform.name}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4 + index * 0.1 }}
+                    className={`flex items-center gap-3 p-4 ${platform.bg} rounded-xl transition-all duration-200 hover:scale-105`}
+                  >
+                    <platform.icon className={`w-5 h-5 ${platform.color}`} />
+                    <span className="text-sm font-medium text-slate-700">{platform.name}</span>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {verificationType === "text" && (
+            <div className="mt-8 p-6 bg-blue-50 rounded-2xl border border-blue-100">
+              <div className="flex items-start gap-3">
+                <FileText className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="font-semibold text-slate-900 mb-2">Text Verification</h4>
+                  <p className="text-sm text-slate-700">
+                    Our AI will analyze the claims, cross-reference with credible sources, 
+                    and provide a detailed fact-check with supporting evidence.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {verificationType === "image" && (
+            <div className="mt-8 p-6 bg-purple-50 rounded-2xl border border-purple-100">
+              <div className="flex items-start gap-3">
+                <ImageIcon className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="font-semibold text-slate-900 mb-2">Image Verification</h4>
+                  <p className="text-sm text-slate-700 mb-3">
+                    Our advanced AI will analyze your image to detect:
+                  </p>
+                  <ul className="text-sm text-slate-700 space-y-1 list-disc list-inside">
+                    <li>Whether the image is AI-generated or real</li>
+                    <li>Image manipulation or editing signs</li>
+                    <li>Verify claims or information shown in the image</li>
+                    <li>Cross-reference with trusted sources</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+}

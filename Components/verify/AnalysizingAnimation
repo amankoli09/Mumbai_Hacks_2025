@@ -1,0 +1,96 @@
+import React, { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Shield, Search, CheckCircle } from "lucide-react";
+
+export default function AnalyzingAnimation() {
+  const [currentStep, setCurrentStep] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(5);
+
+  const steps = [
+    { label: "Fetching content...", icon: Search },
+    { label: "Analyzing...", icon: Shield },
+    { label: "Cross-checking sources...", icon: CheckCircle },
+    { label: "Generating report...", icon: CheckCircle }
+  ];
+
+  useEffect(() => {
+    const stepTimer = setInterval(() => {
+      setCurrentStep(prev => (prev < steps.length - 1 ? prev + 1 : prev));
+    }, 1200);
+
+    const countdownTimer = setInterval(() => {
+      setTimeLeft(prev => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+
+    return () => {
+      clearInterval(stepTimer);
+      clearInterval(countdownTimer);
+    };
+  }, []);
+
+  return (
+    <div className="flex flex-col items-center justify-center py-16">
+      {/* Pulsing Shield Icon */}
+      <motion.div
+        animate={{
+          scale: [1, 1.1, 1],
+          opacity: [0.8, 1, 0.8]
+        }}
+        transition={{
+          duration: 2,
+          repeat: Infinity,
+          ease: "easeInOut"
+        }}
+        className="w-24 h-24 bg-gradient-to-br from-blue-600 to-blue-700 rounded-3xl flex items-center justify-center shadow-2xl shadow-blue-500/40 mb-8"
+      >
+        <Shield className="w-12 h-12 text-white" />
+      </motion.div>
+
+      {/* Progress Steps */}
+      <div className="w-full max-w-md space-y-4 mb-6">
+        {steps.map((step, index) => (
+          <AnimatePresence key={step.label}>
+            {index <= currentStep && (
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                transition={{ duration: 0.4 }}
+                className="flex items-center gap-3"
+              >
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                  index === currentStep 
+                    ? 'bg-blue-600' 
+                    : 'bg-emerald-500'
+                }`}>
+                  {index < currentStep ? (
+                    <CheckCircle className="w-5 h-5 text-white" />
+                  ) : (
+                    <div className="w-3 h-3 bg-white rounded-full animate-pulse" />
+                  )}
+                </div>
+                <span className={`font-medium ${
+                  index === currentStep 
+                    ? 'text-slate-900' 
+                    : 'text-slate-600'
+                }`}>
+                  {step.label}
+                </span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        ))}
+      </div>
+
+      {/* Estimated Time */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.5 }}
+        className="text-sm text-slate-500 font-medium"
+      >
+        Analysis complete in <span className="text-blue-600 font-bold">{timeLeft}s</span>
+      </motion.div>
+    </div>
+  );
+}

@@ -1,0 +1,94 @@
+import React, { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import { Shield, AlertTriangle, Users } from "lucide-react";
+
+export default function LiveStatsCounter() {
+  const [stats, setStats] = useState({
+    verified: 0,
+    misinformation: 0,
+    users: 0
+  });
+
+  const targetStats = {
+    verified: 1247,
+    misinformation: 89,
+    users: 523
+  };
+
+  useEffect(() => {
+    const duration = 2000;
+    const steps = 60;
+    const interval = duration / steps;
+
+    let currentStep = 0;
+    const timer = setInterval(() => {
+      currentStep++;
+      const progress = currentStep / steps;
+
+      setStats({
+        verified: Math.floor(targetStats.verified * progress),
+        misinformation: Math.floor(targetStats.misinformation * progress),
+        users: Math.floor(targetStats.users * progress)
+      });
+
+      if (currentStep >= steps) {
+        setStats(targetStats);
+        clearInterval(timer);
+      }
+    }, interval);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  const statCards = [
+    {
+      label: "Claims Verified Today",
+      value: stats.verified,
+      icon: Shield,
+      gradient: "from-blue-500 to-blue-600",
+      bgColor: "from-blue-50 to-blue-100"
+    },
+    {
+      label: "Misinformation Detected This Week",
+      value: stats.misinformation,
+      icon: AlertTriangle,
+      gradient: "from-red-500 to-red-600",
+      bgColor: "from-red-50 to-red-100"
+    },
+    {
+      label: "Active Users",
+      value: stats.users,
+      icon: Users,
+      gradient: "from-emerald-500 to-emerald-600",
+      bgColor: "from-emerald-50 to-emerald-100"
+    }
+  ];
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+      {statCards.map((stat, index) => (
+        <motion.div
+          key={stat.label}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: index * 0.1, duration: 0.5 }}
+          className={`bg-gradient-to-br ${stat.bgColor} rounded-2xl p-6 border border-${stat.gradient.split('-')[1]}-200 shadow-lg`}
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-3xl font-bold text-slate-900 mb-1">
+                {stat.value.toLocaleString()}
+              </div>
+              <div className="text-sm font-medium text-slate-600">
+                {stat.label}
+              </div>
+            </div>
+            <div className={`w-14 h-14 bg-gradient-to-br ${stat.gradient} rounded-xl flex items-center justify-center shadow-lg`}>
+              <stat.icon className="w-7 h-7 text-white" />
+            </div>
+          </div>
+        </motion.div>
+      ))}
+    </div>
+  );
+}

@@ -1,0 +1,46 @@
+{
+  "name": "UserReport",
+  "type": "object",
+  "properties": {
+    "content_check_id": {
+      "type": "string",
+      "description": "ID of the ContentCheck being reported"
+    },
+    "report_type": {
+      "type": "string",
+      "enum": [
+        "false_positive",
+        "false_negative",
+        "additional_context",
+        "other"
+      ],
+      "description": "Type of report"
+    },
+    "description": {
+      "type": "string",
+      "description": "User's description of the issue"
+    },
+    "supporting_links": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Additional sources provided by user"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "reviewed",
+        "incorporated"
+      ],
+      "default": "pending",
+      "description": "Status of the report"
+    }
+  },
+  "required": [
+    "content_check_id",
+    "report_type",
+    "description"
+  ]
+}

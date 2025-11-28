@@ -1,0 +1,440 @@
+import React, { useState } from "react";
+import { ContentCheck } from "@/entities/ContentCheck";
+import { UserReport } from "@/entities/UserReport";
+import { UserProgress } from "@/entities/UserProgress";
+import { User } from "@/entities/User";
+import { InvokeLLM, UploadFile } from "@/integrations/Core";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
+
+import VerificationForm from "@/Components/verify/VerificationForm";
+import CredibilityResult from "@/Components/verify/CredibilityResult";
+import ReportModal from "@/Components/verify/ReportModal";
+import AnalyzingAnimation from "@/Components/verify/AnalysizingAnimation";
+import LiveStatsCounter from "@/Components/Home/LiveStatsCounter";
+import ExampleCards from "@/Components/Home/ExampleCards";
+import HowItWorks from "@/Components/Home/HowItWorks";
+import MethodologyCard from "@/Components/Shared/MethodologyCard";
+import BrowserExtensionBanner from "@/Components/Shared/BrowserExtensionBanner";
+import WhatsAppBetaBanner from "@/Components/Shared/WhatsAppBetaBanner";
+import PointsNotification from "@/Components/Gamification/PointsNotification";
+
+export default function VerifyPage() {
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState(null);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [verificationType, setVerificationType] = useState("url");
+  const [url, setUrl] = useState("");
+  const [text, setText] = useState("");
+  const [showPointsNotification, setShowPointsNotification] = useState(false);
+  const [earnedPoints, setEarnedPoints] = useState(0);
+
+  const handleExampleClick = (example) => {
+    if (example.type === "url") {
+      setVerificationType("url");
+      setUrl(example.url);
+      setText("");
+    } else if (example.type === "text") {
+      setVerificationType("text");
+      setText(example.text);
+      setUrl("");
+    }
+    window.scrollTo({ top: 400, behavior: 'smooth' });
+  };
+
+  const updateUserProgress = async (pointsEarned) => {
+    try {
+      const currentUser = await User.me();
+      const progressList = await UserProgress.filter({ user_email: currentUser.email });
+      
+      let userProgress;
+      if (progressList.length > 0) {
+        userProgress = progressList[0];
+      } else {
+        userProgress = await UserProgress.create({
+          user_email: currentUser.email,
+          total_points: 0,
+          level: 1,
+          facts_verified: 0,
+          streak_days: 0,
+          badges: [],
+          last_verification_date: new Date().toISOString().split('T')[0]
+        });
+      }
+
+      const newTotalPoints = (userProgress.total_points || 0) + pointsEarned;
+      const newLevel = Math.floor(newTotalPoints / 500) + 1;
+      const newFactsVerified = (userProgress.facts_verified || 0) + 1;
+
+      const today = new Date().toISOString().split('T')[0];
+      const lastDate = userProgress.last_verification_date;
+      let newStreak = userProgress.streak_days || 0;
+      
+      if (lastDate) {
+        const daysDiff = Math.floor((new Date(today) - new Date(lastDate)) / (1000 * 60 * 60 * 24));
+        if (daysDiff === 1) {
+          newStreak += 1;
+        } else if (daysDiff > 1) {
+          newStreak = 1;
+        }
+      } else {
+        newStreak = 1;
+      }
+
+      await UserProgress.update(userProgress.id, {
+        total_points: newTotalPoints,
+        level: newLevel,
+        facts_verified: newFactsVerified,
+        streak_days: newStreak,
+        last_verification_date: today
+      });
+
+      setEarnedPoints(pointsEarned);
+      setShowPointsNotification(true);
+    } catch (err) {
+      console.error("Error updating progress:", err);
+    }
+  };
+
+  const analyzeContent = async ({ verificationType, url, content_text, imageFile, platform }) => {
+    setIsAnalyzing(true);
+    setError(null);
+    setResult(null);
+
+    try {
+      let analysisPrompt;
+      let aiResponse;
+      let uploadedImageUrl = null;
+      
+      if (verificationType === "url") {
+        analysisPrompt = `
+          You are an expert fact-checker analyzing content for misinformation.
+          
+          Content URL: ${url}
+          Platform: ${platform}
+          
+          Please analyze this content and provide:
+          1. A credibility score (0-100, where 100 is completely credible)
+          2. A verdict: "verified", "misleading", "false", or "unverified"
+          3. Content title/headline
+          4. Detailed AI analysis explaining your assessment
+          5. Key claims found in the content with individual verdicts
+          6. Viral score (0-100) indicating how trending this content is
+          7. Estimated engagement metrics (views, shares, comments)
+          8. Whether this content is currently trending (true/false)
+          9. Supporting sources used for verification (3-5 sources with credibility ratings)
+          
+          Be thorough and consider:
+          - Source credibility
+          - Evidence quality
+          - Logical consistency
+          - Cross-referencing with fact-checking databases
+          - Recent news and current events
+        `;
+
+        aiResponse = await InvokeLLM({
+          prompt: analysisPrompt,
+          add_context_from_internet: true,
+          response_json_schema: {
+            type: "object",
+            properties: {
+              credibility_score: { type: "number" },
+              verdict: { type: "string" },
+              title: { type: "string" },
+              ai_analysis: { type: "string" },
+              key_claims: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    claim: { type: "string" },
+                    verdict: { type: "string" }
+                  }
+                }
+              },
+              viral_score: { type: "number" },
+              engagement_metrics: {
+                type: "object",
+                properties: {
+                  views: { type: "number" },
+                  shares: { type: "number" },
+                  comments: { type: "number" }
+                }
+              },
+              is_trending: { type: "boolean" },
+              sources: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    name: { type: "string" },
+                    url: { type: "string" },
+                    credibility: { type: "string" }
+                  }
+                }
+              }
+            }
+          }
+        });
+      } else if (verificationType === "text") {
+        analysisPrompt = `
+          You are an expert fact-checker analyzing text content for misinformation.
+          
+          Content to verify: "${content_text}"
+          
+          Please analyze this text and provide:
+          1. A credibility score (0-100, where 100 is completely credible)
+          2. A verdict: "verified", "misleading", "false", or "unverified"
+          3. A title summarizing the main claim (max 100 characters)
+          4. Detailed AI analysis explaining your assessment
+          5. Key claims found in the text with individual verdicts
+          6. Supporting sources used for verification (3-5 credible sources)
+          
+          Be thorough and consider:
+          - Factual accuracy
+          - Evidence from credible sources
+          - Scientific consensus where applicable
+          - Context and potential misleading framing
+          - Recent verified information
+          
+          Note: viral_score should be 0, engagement_metrics should be null, is_trending should be false.
+        `;
+
+        aiResponse = await InvokeLLM({
+          prompt: analysisPrompt,
+          add_context_from_internet: true,
+          response_json_schema: {
+            type: "object",
+            properties: {
+              credibility_score: { type: "number" },
+              verdict: { type: "string" },
+              title: { type: "string" },
+              ai_analysis: { type: "string" },
+              key_claims: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    claim: { type: "string" },
+                    verdict: { type: "string" }
+                  }
+                }
+              },
+              viral_score: { type: "number" },
+              engagement_metrics: {
+                type: "object",
+                properties: {
+                  views: { type: "number" },
+                  shares: { type: "number" },
+                  comments: { type: "number" }
+                }
+              },
+              is_trending: { type: "boolean" },
+              sources: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    name: { type: "string" },
+                    url: { type: "string" },
+                    credibility: { type: "string" }
+                  }
+                }
+              }
+            }
+          }
+        });
+      } else if (verificationType === "image") {
+        const uploadResult = await UploadFile({ file: imageFile });
+        uploadedImageUrl = uploadResult.file_url;
+
+        analysisPrompt = `
+          You are an expert image analyst and fact-checker specializing in detecting AI-generated images.
+          
+          Analyze the uploaded image and provide:
+          1. is_ai_generated: boolean (true if AI-generated)
+          2. ai_generation_confidence: number (0-100)
+          3. image_manipulation_detected: boolean
+          4. credibility_score: number (0-100)
+          5. verdict: "verified", "misleading", "false", or "unverified"
+          6. title: descriptive title
+          7. ai_analysis: detailed analysis
+          8. key_claims: extract and verify any text/claims in the image
+          9. sources: 3-5 credible sources for verification
+          
+          Look for AI artifacts, manipulation signs, and verify content with trusted sources.
+          
+          Note: viral_score should be 0, engagement_metrics should be null, is_trending should be false.
+        `;
+
+        aiResponse = await InvokeLLM({
+          prompt: analysisPrompt,
+          add_context_from_internet: true,
+          file_urls: [uploadedImageUrl],
+          response_json_schema: {
+            type: "object",
+            properties: {
+              is_ai_generated: { type: "boolean" },
+              ai_generation_confidence: { type: "number" },
+              image_manipulation_detected: { type: "boolean" },
+              credibility_score: { type: "number" },
+              verdict: { type: "string" },
+              title: { type: "string" },
+              ai_analysis: { type: "string" },
+              key_claims: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    claim: { type: "string" },
+                    verdict: { type: "string" }
+                  }
+                }
+              },
+              sources: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    name: { type: "string" },
+                    url: { type: "string" },
+                    credibility: { type: "string" }
+                  }
+                }
+              }
+            }
+          }
+        });
+      }
+
+      const checkData = {
+        verification_type: verificationType,
+        platform,
+        content_type: verificationType === "image" ? "image" : verificationType === "text" ? "text" : "video",
+        status: "completed",
+        viral_score: verificationType === "url" ? aiResponse.viral_score : 0,
+        engagement_metrics: verificationType === "url" ? aiResponse.engagement_metrics : null,
+        is_trending: verificationType === "url" ? aiResponse.is_trending : false,
+        ...aiResponse
+      };
+
+      if (verificationType === "url") {
+        checkData.url = url;
+      } else if (verificationType === "text") {
+        checkData.content_text = content_text;
+      } else if (verificationType === "image") {
+        checkData.image_url = uploadedImageUrl;
+      }
+
+      const savedCheck = await ContentCheck.create(checkData);
+      setResult(savedCheck);
+
+      let pointsEarned = 50;
+      if (savedCheck.verdict === "false") {
+        pointsEarned += 100;
+      }
+      await updateUserProgress(pointsEarned);
+
+    } catch (err) {
+      console.error("Error analyzing content:", err);
+      setError("Failed to analyze content. Please try again.");
+    }
+
+    setIsAnalyzing(false);
+  };
+
+  const handleReport = async (reportData) => {
+    try {
+      await UserReport.create(reportData);
+    } catch (err) {
+      console.error("Error submitting report:", err);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100 p-6 md:p-12">
+      <PointsNotification 
+        points={earnedPoints}
+        isVisible={showPointsNotification}
+        onClose={() => setShowPointsNotification(false)}
+      />
+      
+      <div className="max-w-5xl mx-auto space-y-8">
+        {/* Hero Section */}
+        {!result && (
+          <>
+            <div className="text-center mb-8">
+              <h1 className="text-4xl md:text-6xl font-bold text-slate-900 mb-4 tracking-tight">
+                Stop Misinformation
+                <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-blue-700">
+                  In Its Tracks
+                </span>
+              </h1>
+              <p className="text-xl text-slate-600 max-w-3xl mx-auto mb-8">
+                Truth moves at the speed of AI. Verify URLs, text claims, or images instantly. 
+                Detect AI-generated content and misinformation with our advanced detection system.
+              </p>
+            </div>
+
+            <LiveStatsCounter />
+            <ExampleCards onExampleClick={handleExampleClick} />
+          </>
+        )}
+
+        {/* Error Alert */}
+        {error && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        {/* Verification Form */}
+        {!result && !isAnalyzing && (
+          <VerificationForm onSubmit={analyzeContent} isLoading={isAnalyzing} />
+        )}
+
+        {/* Analyzing Animation */}
+        {isAnalyzing && <AnalyzingAnimation />}
+
+        {/* Result Display */}
+        {result && (
+          <div className="space-y-6">
+            <CredibilityResult 
+              result={result} 
+              onReport={() => setShowReportModal(true)} 
+            />
+            
+            <div className="text-center">
+              <button
+                onClick={() => setResult(null)}
+                className="text-blue-600 hover:text-blue-700 font-semibold underline"
+              >
+                Verify Another {result.verification_type === "image" ? "Image" : result.verification_type === "text" ? "Text" : "Link"}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* How It Works Section */}
+        {!result && !isAnalyzing && (
+          <>
+            <HowItWorks />
+            <MethodologyCard />
+            <BrowserExtensionBanner />
+            <WhatsAppBetaBanner />
+          </>
+        )}
+
+        {/* Report Modal */}
+        <ReportModal
+          isOpen={showReportModal}
+          onClose={() => setShowReportModal(false)}
+          contentCheck={result}
+          onSubmit={handleReport}
+        />
+      </div>
+    </div>
+  );
+}
