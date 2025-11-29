@@ -121,6 +121,3 @@ Built with ❤️ at **Mumbai Hacks 2025** by a team passionate about protecting
 🌐 **Live Demo:** [Click here](https://truth-shield-4ea68cd0.base44.app/)
 
 ---
-
-## 📜 License
-This project is open source and licensed under the **MIT License**.
